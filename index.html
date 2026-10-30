@@ -68,7 +68,7 @@ header{padding:40px 0 8px}
 section{padding:38px 0 6px}
 .sec-h{display:flex;align-items:baseline;gap:12px;border-bottom:2px solid var(--ink);padding-bottom:8px;margin-bottom:16px}
 .sec-h .idx{font-family:"JetBrains Mono",Consolas,monospace;font-size:11px;color:var(--terra);letter-spacing:.16em}
-.sec-h h2{font-family:"Source Han Serif SC","Songti SC",SimSun,serif;font-size:clamp(20px,2.6vw,26px);letter-spacing:.08em}
+.sec-h h2{font-family:"Source Han Serif SC","Songti SC",SimSun,serif;font-size:clamp(20px,2.6vw,26px);letter-spacing:.08em;white-space:nowrap}
 .sec-h .aside{margin-left:auto;font-size:12.5px;color:var(--muted)}
 .sec-h .aside button{font:inherit;font-size:12.5px;background:none;border:1px dashed var(--rule-2);
   border-radius:99px;padding:3px 12px;color:var(--ink-soft);cursor:pointer}
@@ -109,6 +109,15 @@ section{padding:38px 0 6px}
 .now-dot{position:absolute;top:-6px;width:2px;height:46px;background:var(--terra)}
 .now-dot::before{content:"";position:absolute;top:-4px;left:-4px;width:10px;height:10px;border-radius:50%;
   background:var(--terra);box-shadow:0 0 0 4px rgba(162,98,70,.18)}
+
+/* ---------- 日型切换 ---------- */
+.daytype{display:inline-flex;gap:2px;margin-left:12px;padding:2px;border:1px solid var(--rule);
+  border-radius:99px;background:rgba(255,253,247,.5);vertical-align:middle}
+.daytype button{font:inherit;font-size:11.5px;border:none;background:none;color:var(--muted);
+  padding:3px 10px;border-radius:99px;cursor:pointer;transition:.2s;line-height:1.4}
+.daytype button:hover{color:var(--ink)}
+.daytype button[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
+@media (prefers-color-scheme: dark){ .daytype{background:rgba(255,255,255,.03)} }
 
 /* ---------- 时间轴 ---------- */
 .tl{position:relative;margin-top:12px;border-radius:10px;
@@ -252,6 +261,11 @@ footer button:hover{border-color:var(--terra);color:var(--terra)}
 @media (max-width:640px){
   .datenav .ping{flex-basis:100%;order:9;margin-top:2px}
 }
+@media (max-width:640px){
+  .sec-h{flex-wrap:wrap;row-gap:8px}
+  .sec-h .aside{width:100%;margin-left:0;display:flex;align-items:center;gap:8px}
+  .daytype{margin-left:auto}
+}
 @media (max-width:819px){
   .tl .row{grid-template-columns:68px 30px 1fr;gap:8px}
   .tl::before{left:90px}
@@ -315,7 +329,7 @@ footer button:hover{border-color:var(--terra);color:var(--terra)}
 
 <main class="wrap">
   <section id="day">
-    <div class="sec-h"><span class="idx">01</span><h2>一天</h2><span class="aside">点色块跳到那个时段</span></div>
+    <div class="sec-h"><span class="idx">01</span><h2>一天</h2><span class="aside">点色块跳到那个时段<span class="daytype" id="daytype"><button data-v="swim" aria-pressed="false">游泳日</button><button data-v="free" aria-pressed="false">非游泳日</button></span></span></div>
     <div class="card ribbon">
       <div class="rb" id="rb" role="group" tabindex="0" aria-label="一天的时间分布，点一下跳到对应时段"></div>
       <div class="rb-axis"><i style="left:0.00%">06:30</i><i style="left:14.71%">09:00</i><i style="left:32.35%">12:00</i><i style="left:50.00%">15:00</i><i style="left:67.65%">18:00</i><i style="left:85.29%">21:00</i><i style="left:100.00%">23:30</i></div>
@@ -347,7 +361,7 @@ footer button:hover{border-color:var(--terra);color:var(--terra)}
 const DATA=JSON.parse(document.getElementById('data').textContent);
 const PLAN=DATA.plan, ICONS=DATA.icons;
 const ico=n=>(ICONS[n]||'').replace('class="ico" ','');
-const ROWS=[
+const ROWS_SWIM=[
  {t:'06:30',s:0,e:15,d:'15′',type:'ritual',label:'起床，15 min 全身拉伸',short:'起床'},
  {t:'06:45–07:20',s:15,e:50,d:'35′',type:'meal',meal:'b',label:'自制早餐，同步穿插洗漱',short:'早餐'},
  {t:'07:20–07:40',s:50,e:70,d:'20′',type:'leisure',label:'✨ 休闲：吃完早餐，安心刷手机',short:'休闲'},
@@ -365,6 +379,27 @@ const ROWS=[
  {t:'23:00–23:25',s:990,e:1015,d:'25′',type:'leisure',label:'✨ 睡前休闲：玩手机放松',short:'休闲'},
  {t:'23:25',s:1015,e:1020,d:'—',type:'sleep',label:'关灯上床（硬性底线，不超过 23:30）',short:'关灯'}
 ];
+/* 非游泳日：晚上换成「深度学习 + 自由休闲 + 快速复盘」 */
+const ROWS_FREE=[
+ {t:'06:30',s:0,e:15,d:'15′',type:'ritual',label:'起床，15 min 拉伸',short:'起床'},
+ {t:'06:45–07:20',s:15,e:50,d:'35′',type:'meal',meal:'b',label:'自制早餐，同步洗漱',short:'早餐'},
+ {t:'07:20–07:40',s:50,e:70,d:'20′',type:'leisure',label:'✨ 休闲：餐后刷手机',short:'休闲'},
+ {t:'07:45',s:75,e:90,d:'15′',type:'commute',label:'出门通勤',short:'通勤'},
+ {t:'08:00–12:00',s:90,e:330,d:'4 h',type:'work',label:'上午工作',short:'工作'},
+ {t:'12:05',s:335,e:390,d:'55′',type:'meal',meal:'l',label:'回家做饭、吃饭、收拾',short:'午饭'},
+ {t:'13:00–13:30',s:390,e:420,d:'30′',type:'rest',label:'✅ 午休 30 min',short:'午休'},
+ {t:'13:30–14:20',s:420,e:470,d:'50′',type:'study',label:'学习（50 min）：背诵、积累知识点',short:'学习'},
+ {t:'14:25',s:475,e:480,d:'5′',type:'commute',label:'出门回单位',short:'出门'},
+ {t:'14:30–18:00',s:480,e:690,d:'3 h 30',type:'work',label:'下午工作',short:'工作'},
+ {t:'18:05',s:695,e:750,d:'55′',type:'meal',meal:'d',label:'到家，晚餐',short:'晚饭'},
+ {t:'19:00–21:20',s:750,e:890,d:'2 h 20',type:'study',label:'深度学习（140 min）：听课、刷题',short:'学习'},
+ {t:'21:20–22:30',s:890,e:960,d:'1 h 10',type:'leisure',label:'✨ 自由休闲，刷手机放松',short:'休闲'},
+ {t:'22:30–22:50',s:960,e:980,d:'20′',type:'study',label:'快速复盘，收好书本',short:'复盘'},
+ {t:'22:50',s:980,e:1020,d:'—',type:'sleep',label:'上床，如果想再刷一会儿，控制在 23:30 前入睡',short:'上床'}
+];
+const rowsOf=t=>t==='swim'?ROWS_SWIM:ROWS_FREE;
+const dayType=d=>(planFor(d).swim?'swim':'free');
+const bandOf=s=>s<90?'morning':(s<695?'day':'evening');
 const DAY_START=6*60+30, TOTAL=1020, MEALK={b:'早饭',l:'午饭',d:'晚饭'};
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const pad=n=>String(n).padStart(2,'0');
@@ -393,14 +428,14 @@ function setEaten(d,k,on){
   if(!Object.keys(all[key]).length) delete all[key];
   try{localStorage.setItem(LS,JSON.stringify(all))}catch(e){}
 }
-const state={dayOffset:0};
+const state={dayOffset:0, view:dayType(new Date())};
 
 /* 现在 */
 function pickMeal(m){
-  const plan=planFor(new Date());
-  const inMeal=ROWS.find(r=>r.meal&&m>=r.s&&m<r.e);          // 正在这顿饭的时间窗里
+  const plan=planFor(new Date()), rows=rowsOf(dayType(new Date()));
+  const inMeal=rows.find(r=>r.meal&&m>=r.s&&m<r.e);          // 正在这顿饭的时间窗里
   if(inMeal) return {key:inMeal.meal, pl:plan, when:'今天', eating:true};
-  const next=ROWS.find(r=>r.meal&&r.s>m);                     // 还没到这顿
+  const next=rows.find(r=>r.meal&&r.s>m);                     // 还没到这顿
   if(next) return {key:next.meal, pl:plan, when:'今天', eating:false};
   return {key:'b', pl:planFor(addDays(new Date(),1)), when:'明天', eating:false}; // 今天吃完了
 }
@@ -413,7 +448,8 @@ function updateNowDot(){
 function renderNow(){
   const now=new Date(), m=now.getHours()*60+now.getMinutes()-DAY_START;
   const isToday=m>=0&&m<=TOTAL;
-  const next=ROWS.find(r=>r.s>Math.max(m,0))||ROWS[0];
+  const rows=rowsOf(dayType(now));
+  const next=rows.find(r=>r.s>Math.max(m,0))||rows[0];
   const pick=pickMeal(m);
   const hhmm=`${pad(now.getHours())}:${pad(now.getMinutes())}`;
   $('#nowline').innerHTML = isToday
@@ -423,16 +459,17 @@ function renderNow(){
   $('#nowdish').innerHTML=`<em>${pick.when}${MEALK[pick.key]}</em>${pick.pl[pick.key][0]}`;
   const e=eatenOf(now);
   $$('#nowdots .dot-btn').forEach(b=>b.setAttribute('aria-pressed',!!e[b.dataset.k]));
-  $$('.tl .row').forEach(r=>r.classList.toggle('now',isToday&&m>=+r.dataset.s&&m<+r.dataset.e));
+  const sameDay=state.view===dayType(now);
+  $$('.tl .row').forEach(r=>r.classList.toggle('now',sameDay&&isToday&&m>=+r.dataset.s&&m<+r.dataset.e));
   updateNowDot();
 }
 
 /* 色带 */
-function renderRibbon(plan){
+function renderRibbon(){
   const segs=[]; let cur=0;
-  ROWS.forEach(r=>{
+  rowsOf(state.view).forEach(r=>{
     if(r.s>cur) segs.push({s:cur,e:r.s,type:'gap'});
-    segs.push({s:r.s,e:r.e,type:(r.type==='swim'&&!plan.swim)?'free':r.type,label:(r.type==='work'?r.label:'')});
+    segs.push({s:r.s,e:r.e,type:r.type,label:(r.type==='work'?r.label:'')});
     cur=r.e;
   });
   $('#rb').innerHTML=segs.map(x=>{
@@ -467,10 +504,11 @@ function smoothTo(y){
   })(t0);
 }
 function seek(min){
-  let row=ROWS.find(r=>min>=r.s&&min<r.e);
+  const rows=rowsOf(state.view);
+  let row=rows.find(r=>min>=r.s&&min<r.e);
   if(!row){
     const dist=r=>min<r.s?r.s-min:(min>r.e?min-r.e:0);
-    row=ROWS.reduce((a,b)=>dist(b)<dist(a)?b:a, ROWS[0]);
+    row=rows.reduce((a,b)=>dist(b)<dist(a)?b:a, rows[0]);
   }
   const node=$$('.tl .row').find(n=>+n.dataset.s===row.s);
   if(!node) return;
@@ -503,15 +541,15 @@ const GLYPHS={
 const BANDS={morning:['早上','06:30 – 08:00'],day:['白天','08:00 – 18:00'],evening:['晚上','18:05 – 23:30']};
 const BAND_AT={0:'morning',1:'morning',2:'morning',3:'morning',4:'day',5:'day',6:'day',7:'day',8:'day',9:'day',
   10:'evening',11:'evening',12:'evening',13:'evening',14:'evening',15:'evening'};
-function renderTimeline(plan){
-  let html='';
-  ROWS.forEach((r,i)=>{
-    if(BAND_AT[i] && (i===0 || BAND_AT[i]!==BAND_AT[i-1])){
-      const b=BANDS[BAND_AT[i]];
-      html+=`<div class="band"><b>${b[0]}</b><span>${b[1]}</span></div>`;
-    }
-    let type=r.type,label=r.label,extra='',glyph='<svg viewBox="0 0 24 24">'+(GLYPHS[r.type]||GLYPHS.work)+'</svg>';
-    if(r.type==='swim'&&!plan.swim){type='free';label='自由安排';glyph='<svg viewBox="0 0 24 24">'+GLYPHS.leisure+'</svg>';}
+function renderTimeline(){
+  const today=new Date(), plan=planFor(today), rows=rowsOf(state.view);
+  const sameDay = state.view===dayType(today);
+  const m=today.getHours()*60+today.getMinutes()-DAY_START;
+  let html='', prev='';
+  rows.forEach(r=>{
+    const band=bandOf(r.s);
+    if(band!==prev){ const b=BANDS[band]; html+=`<div class="band"><b>${b[0]}</b><span>${b[1]}</span></div>`; prev=band; }
+    let extra='', glyph='<svg viewBox="0 0 24 24">'+(GLYPHS[r.type]||GLYPHS.work)+'</svg>';
     if(r.meal){
       const mm=plan[r.meal];
       glyph=(ICONS[mm[0]]||'').replace('class="ico" ','');
@@ -519,10 +557,11 @@ function renderTimeline(plan){
       extra=`<div class="dish"><div class="nm">${mm[0]}</div><div class="nt">${mm[1]}</div>${snack}</div>`;
     }
     const span=r.e-r.s, size=span>=90?'long':(span>=40?'mid':'');
-    html+=`<div class="row ${type} ${size}" data-s="${r.s}" data-e="${r.e}">
+    const isNow = sameDay && m>=r.s && m<r.e;
+    html+=`<div class="row ${r.type} ${size}${isNow?' now':''}" data-s="${r.s}" data-e="${r.e}">
       <div class="tt">${r.t}</div>
-      <div class="rail"><span class="node ${type}">${glyph}</span></div>
-      <div><div class="meta"><span class="label">${label}</span><span class="dur">${r.d}</span></div>${extra}</div>
+      <div class="rail"><span class="node ${r.type}">${glyph}</span></div>
+      <div><div class="meta"><span class="label">${r.label}</span><span class="dur">${r.d}</span></div>${extra}</div>
     </div>`;
   });
   $('#tl').innerHTML=html;
@@ -594,11 +633,15 @@ function renderWeeks(){
 }
 
 document.addEventListener('DOMContentLoaded',()=>{
-  const plan=planFor(new Date());
-  renderRibbon(plan); renderTimeline(plan); renderToday(); renderWeeks(); renderNow();
+  renderRibbon(); renderTimeline(); renderToday(); renderWeeks(); renderNow();
   $$('#nowdots .dot-btn').forEach(b=>b.onclick=()=>{
     const d=new Date(), on=!eatenOf(d)[b.dataset.k];
     setEaten(d,b.dataset.k,on); renderNow(); renderToday(); renderWeeks();
+  });
+  const syncType=()=>$$('#daytype button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===state.view));
+  syncType();
+  $$('#daytype button').forEach(b=>b.onclick=()=>{
+    state.view=b.dataset.v; syncType(); renderTimeline(); renderRibbon(); renderNow();
   });
   $('#jump').onclick=()=>{
     const row=$('#todayrow');
